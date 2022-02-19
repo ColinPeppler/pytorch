@@ -11,14 +11,21 @@ env:
   IS_GHA: 1 # TODO delete in favor of GITHUB_ACTIONS
 
 jobs:
-  linux-xenial-py3_7-gcc5_4:
+  linux-xenial-py3_7-gcc5_4-build:
     name: linux-xenial-py3.7-gcc5.4
-    uses: ./.github/workflows/_linux-build-test.yml
+    uses: ./.github/workflows/_linux-build.yml
     with:
       build-environment: linux-xenial-py3.7-gcc5.4
       docker-image-base: 308535385114.dkr.ecr.us-east-1.amazonaws.com/pytorch/pytorch-linux-xenial-py3.7-gcc5.4
       build-generates-artifacts: true
-      build-docs: true
+
+  linux-xenial-py3_7-gcc5_4-test:
+    name: linux-xenial-py3.7-gcc5.4
+    uses: ./.github/workflows/_linux-test.yml
+    needs: linux-xenial-py3_7-gcc5_4-build
+    with:
+      build-environment: linux-xenial-py3.7-gcc5.4
+      docker-image: ${{ needs.linux-xenial-py3_7-gcc5_4-build.outputs.docker-image }}
       test-matrix: |
         { include: [
           { config: "default", shard: 1, num_shards: 2, runner: "linux.2xlarge" },
@@ -29,16 +36,52 @@ jobs:
           { config: "jit_legacy", shard: 1, num_shards: 1, runner: "linux.2xlarge" }
         ]}
 
-  linux-xenial-cuda11_3-py3_7-gcc7:
+  docs:
+    name: docs build
+    uses: ./.github/workflows/_docs.yml
+    needs: linux-xenial-py3_7-gcc5_4-build
+    with:
+      build-environment: linux-xenial-py3.7-gcc5.4
+      docker-image: ${{ needs.linux-xenial-py3_7-gcc5_4-build.outputs.docker-image }}
+
+  linux-xenial-cuda11_3-py3_7-gcc7-build:
     name: linux-xenial-cuda11.3-py3.7-gcc7
-    uses: ./.github/workflows/_linux-build-test.yml
+    uses: ./.github/workflows/_linux-build.yml
     with:
       build-environment: linux-xenial-cuda11.3-py3.7-gcc7
       docker-image-base: 308535385114.dkr.ecr.us-east-1.amazonaws.com/pytorch/pytorch-linux-xenial-cuda11.3-cudnn8-py3-gcc7
+      build-generates-artifacts: true
+
+  linux-xenial-cuda11_3-py3_7-gcc7-test:
+    name: linux-xenial-cuda11.3-py3.7-gcc7
+    uses: ./.github/workflows/_linux-test.yml
+    with:
+      build-environment: linux-xenial-cuda11.3-py3.7-gcc7
+      docker-image: ${{ needs.linux-xenial-cuda11_3-py3_7-gcc7-build.outputs.docker-image }}
       build-generates-artifacts: true
       test-matrix: |
         { include: [
           { config: "default", shard: 1, num_shards: 2, runner: "linux.4xlarge.nvidia.gpu" },
           { config: "default", shard: 2, num_shards: 2, runner: "linux.4xlarge.nvidia.gpu" },
           { config: "distributed", shard: 1, num_shards: 1, runner: "linux.8xlarge.nvidia.gpu" }
+        ]}
+
+  linux-xenial-py3_7-gcc7-build:
+    name: linux-xenial-py3.7-gcc7
+    uses: ./.github/workflows/_linux-build.yml
+    with:
+      build-environment: linux-xenial-py3.7-gcc7
+      docker-image-base: 308535385114.dkr.ecr.us-east-1.amazonaws.com/pytorch/pytorch-linux-xenial-py3.7-gcc7
+      build-generates-artifacts: true
+
+  linux-xenial-py3_7-gcc7-test:
+    name: linux-xenial-py3.7-gcc7
+    uses: ./.github/workflows/_linux-test.yml
+    with:
+      build-environment: linux-xenial-py3.7-gcc7
+      docker-image: ${{ needs.linux-xenial-py3_7-gcc7-build.outputs.docker-image }}
+      test-matrix: |
+        { include: [
+          { config: "default", shard: 1, num_shards: 2, runner: "linux.2xlarge" },
+          { config: "default", shard: 2, num_shards: 2, runner: "linux.2xlarge" },
         ]}
